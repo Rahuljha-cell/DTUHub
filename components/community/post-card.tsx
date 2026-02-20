@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Heart, MessageCircle, Send } from "lucide-react";
+import Link from "next/link";
+import { Heart, MessageCircle, Send, Trash2, Shield } from "lucide-react";
 import Avatar from "@/components/ui/avatar";
 import Badge from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -11,15 +12,19 @@ import { timeAgo, cn } from "@/lib/utils";
 interface PostCardProps {
   post: any;
   userId?: string;
+  isAdmin?: boolean;
   onLike: (postId: string) => void;
   onComment: (postId: string, text: string) => void;
+  onDelete?: (postId: string) => void;
 }
 
 export default function PostCard({
   post,
   userId,
+  isAdmin,
   onLike,
   onComment,
+  onDelete,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -36,14 +41,19 @@ export default function PostCard({
       <div className="p-5">
         {/* Author */}
         <div className="flex items-center gap-3">
-          <Avatar
-            src={post.author?.avatar}
-            name={post.author?.name || "User"}
-          />
+          <Link href={`/profile/${post.author?._id}`} className="shrink-0">
+            <Avatar
+              src={post.author?.avatar}
+              name={post.author?.name || "User"}
+            />
+          </Link>
           <div>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">
+            <Link
+              href={`/profile/${post.author?._id}`}
+              className="text-sm font-bold text-gray-900 hover:text-primary-600 transition-colors dark:text-white dark:hover:text-primary-400"
+            >
               {post.author?.name}
-            </p>
+            </Link>
             <div className="flex items-center gap-2 text-xs text-gray-500">
               {post.author?.branch && <span>{post.author.branch}</span>}
               {post.author?.year && <span>• Year {post.author.year}</span>}
@@ -112,6 +122,17 @@ export default function PostCard({
             <MessageCircle className="h-4 w-4" />
             {post.comments?.length || 0}
           </button>
+          {(isAdmin || post.author?._id === userId) && onDelete && (
+            <button
+              onClick={() => {
+                if (confirm("Delete this post?")) onDelete(post._id);
+              }}
+              className="ml-auto flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-red-500 transition-all duration-300 hover:bg-red-50/80 dark:hover:bg-red-950/30"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
+          )}
         </div>
 
         {/* Comments */}
@@ -119,15 +140,17 @@ export default function PostCard({
           <div className="mt-3 space-y-3">
             {post.comments?.map((comment: any, i: number) => (
               <div key={i} className="flex gap-2">
-                <Avatar
-                  src={comment.user?.avatar}
-                  name={comment.user?.name || "User"}
-                  size="sm"
-                />
+                <Link href={`/profile/${comment.user?._id}`} className="shrink-0">
+                  <Avatar
+                    src={comment.user?.avatar}
+                    name={comment.user?.name || "User"}
+                    size="sm"
+                  />
+                </Link>
                 <div className="rounded-xl bg-gray-50/80 px-3 py-2 backdrop-blur-sm dark:bg-gray-700/50">
-                  <p className="text-xs font-bold text-gray-900 dark:text-white">
+                  <Link href={`/profile/${comment.user?._id}`} className="text-xs font-bold text-gray-900 hover:text-primary-600 transition-colors dark:text-white dark:hover:text-primary-400">
                     {comment.user?.name}
-                  </p>
+                  </Link>
                   <p className="text-xs text-gray-600 dark:text-gray-300">
                     {comment.text}
                   </p>

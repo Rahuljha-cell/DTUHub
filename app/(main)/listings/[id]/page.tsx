@@ -11,6 +11,8 @@ import {
   Phone,
   MessageCircle,
   Star,
+  Trash2,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/button";
@@ -21,6 +23,7 @@ import Select from "@/components/ui/select";
 import Modal from "@/components/ui/modal";
 import { formatPrice, formatDate } from "@/lib/utils";
 import { CAMPUS_LOCATIONS } from "@/types";
+import { createOrGetChat } from "@/lib/chat";
 import toast from "react-hot-toast";
 
 export default function ListingDetailPage() {
@@ -119,6 +122,38 @@ export default function ListingDetailPage() {
   }
 
   const isOwner = session?.user && (session.user as any).id === listing.owner?._id;
+  const isAdmin = (session?.user as any)?.role === "admin";
+
+  const handleAdminDelete = async () => {
+    if (!confirm("Admin: Delete this listing permanently?")) return;
+    try {
+      const res = await fetch(`/api/listings/${listing._id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Listing deleted by admin");
+        router.push("/browse");
+      }
+    } catch {
+      toast.error("Failed to delete listing");
+    }
+  };
+
+  const handleChatWithOwner = async () => {
+    const userId = (session?.user as any)?.id;
+    const userName = session?.user?.name || "User";
+    if (!userId || !listing.owner) return;
+
+    try {
+      await createOrGetChat(
+        userId,
+        userName,
+        listing.owner._id,
+        listing.owner.name
+      );
+      router.push("/chat");
+    } catch {
+      toast.error("Failed to start chat");
+    }
+  };
 
   const paymentOptions = [];
   if (listing.paymentOptions?.cod) paymentOptions.push({ value: "cod", label: "Cash on Delivery" });
@@ -245,36 +280,52 @@ export default function ListingDetailPage() {
 
           {/* Owner info */}
           {listing.owner && (
-            <div className="mt-6 flex items-center gap-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-              <Avatar
-                src={listing.owner.avatar}
-                name={listing.owner.name}
-                size="lg"
-              />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  {listing.owner.name}
-                </p>
-                {listing.owner.branch && (
-                  <p className="text-sm text-gray-500">
-                    {listing.owner.branch}
-                    {listing.owner.year && ` • Year ${listing.owner.year}`}
+            <div className="mt-6 flex items-center justify-between rounded-2xl border border-white/20 bg-white/60 p-4 backdrop-blur-xl dark:border-white/10 dark:bg-gray-800/60">
+              <Link href={`/profile/${listing.owner._id}`} className="flex items-center gap-3 transition-opacity hover:opacity-80">
+                <Avatar
+                  src={listing.owner.avatar}
+                  name={listing.owner.name}
+                  size="lg"
+                />
+                <div>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    {listing.owner.name}
                   </p>
-                )}
-              </div>
+                  {listing.owner.branch && (
+                    <p className="text-sm text-gray-500">
+                      {listing.owner.branch}
+                      {listing.owner.year && ` • Year ${listing.owner.year}`}
+                    </p>
+                  )}
+                </div>
+              </Link>
+              {!isOwner && (
+                <Button size="sm" variant="outline" onClick={handleChatWithOwner}>
+                  <MessageCircle className="h-3.5 w-3.5" /> Chat
+                </Button>
+              )}
             </div>
           )}
 
           {/* Actions */}
           <div className="mt-6 flex gap-3">
             {!isOwner && listing.status === "available" && (
-              <Button
-                size="lg"
-                className="flex-1"
-                onClick={() => setShowBooking(true)}
-              >
-                Rent This Item
-              </Button>
+              <>
+                <Button
+                  size="lg"
+                  className="flex-1"
+                  onClick={() => setShowBooking(true)}
+                >
+                  Rent This Item
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={handleChatWithOwner}
+                >
+                  <MessageCircle className="h-4 w-4" /> Chat with Owner
+                </Button>
+              </>
             )}
             {isOwner && (
               <Link href={`/listings/my`} className="flex-1">
@@ -282,6 +333,16 @@ export default function ListingDetailPage() {
                   Manage Listing
                 </Button>
               </Link>
+            )}
+            {isAdmin && !isOwner && (
+              <Button
+                size="lg"
+                variant="danger"
+                onClick={handleAdminDelete}
+              >
+                <Shield className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" /> Admin Delete
+              </Button>
             )}
           </div>
         </div>

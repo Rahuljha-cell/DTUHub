@@ -9,6 +9,10 @@ import {
   BookOpen,
   Star,
   MessageCircle,
+  Shield,
+  Ban,
+  Trash2,
+  ShieldCheck,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -79,11 +83,35 @@ export default function UserProfilePage() {
 
   const { user, listings, resources, stats } = userData;
   const isOwnProfile = (session?.user as any)?.id === user._id;
+  const isAdmin = (session?.user as any)?.role === "admin";
+
+  const handleAdminAction = async (action: string) => {
+    const label = action === "ban" ? "ban" : action === "unban" ? "unban" : action === "delete" ? "permanently delete" : action;
+    if (!confirm(`Are you sure you want to ${label} this user?`)) return;
+
+    try {
+      const res = await fetch(`/api/users/${user._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminAction: action }),
+      });
+      if (res.ok) {
+        toast.success(`User ${action === "ban" ? "banned" : action === "unban" ? "unbanned" : "deleted"} successfully`);
+        if (action === "delete") {
+          router.push("/browse");
+        } else {
+          window.location.reload();
+        }
+      }
+    } catch {
+      toast.error("Action failed");
+    }
+  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <Card className="overflow-hidden">
-        <div className="h-32 bg-gradient-to-r from-primary-600 to-primary-800" />
+        <div className="h-32 bg-gradient-to-r from-primary-500 via-purple-500 to-pink-500" />
         <div className="relative px-6 pb-6">
           <div className="-mt-12 flex items-end gap-4">
             <Avatar
@@ -95,19 +123,33 @@ export default function UserProfilePage() {
             <div className="flex-1 pb-1">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    {user.name}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-extrabold text-gray-900 dark:text-white">
+                      {user.name}
+                    </h1>
+                    {user.role === "admin" && (
+                      <Badge variant="info" className="gap-1">
+                        <Shield className="h-3 w-3" /> Admin
+                      </Badge>
+                    )}
+                    {user.role === "banned" && (
+                      <Badge variant="danger" className="gap-1">
+                        <Ban className="h-3 w-3" /> Banned
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500">
                     {user.branch}
                     {user.year && ` • Year ${user.year}`}
                   </p>
                 </div>
-                {!isOwnProfile && (
-                  <Button size="sm" onClick={handleChat}>
-                    <MessageCircle className="h-3.5 w-3.5" /> Message
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {!isOwnProfile && (
+                    <Button onClick={handleChat}>
+                      <MessageCircle className="h-4 w-4" /> Message
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -155,6 +197,30 @@ export default function UserProfilePage() {
           )}
         </div>
       </Card>
+
+      {/* Admin Controls */}
+      {isAdmin && !isOwnProfile && (
+        <Card className="mt-6 overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-gray-200/50 bg-red-50/50 px-5 py-3 dark:border-gray-700/50 dark:bg-red-950/20">
+            <Shield className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <h2 className="text-sm font-bold text-red-700 dark:text-red-400">Admin Controls</h2>
+          </div>
+          <div className="flex flex-wrap gap-2 p-4">
+            {user.role !== "banned" ? (
+              <Button variant="danger" size="sm" onClick={() => handleAdminAction("ban")}>
+                <Ban className="h-3.5 w-3.5" /> Ban User
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => handleAdminAction("unban")}>
+                <ShieldCheck className="h-3.5 w-3.5" /> Unban User
+              </Button>
+            )}
+            <Button variant="danger" size="sm" onClick={() => handleAdminAction("delete")}>
+              <Trash2 className="h-3.5 w-3.5" /> Delete User & Content
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {listings?.length > 0 && (
         <div className="mt-8">

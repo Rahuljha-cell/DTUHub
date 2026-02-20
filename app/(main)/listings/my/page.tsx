@@ -18,13 +18,9 @@ export default function MyListingsPage() {
 
   const fetchMyListings = useCallback(async () => {
     try {
-      const res = await fetch("/api/listings?mine=true");
+      const res = await fetch("/api/listings?mine=true&limit=100");
       const data = await res.json();
-      const userId = (session?.user as any)?.id;
-      const myListings = (data.listings || []).filter(
-        (l: any) => l.owner?._id === userId || l.owner === userId
-      );
-      setListings(myListings);
+      setListings(data.listings || []);
     } catch {
       setListings([]);
     } finally {

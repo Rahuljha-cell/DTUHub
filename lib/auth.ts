@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "./mongodb";
 import User from "@/models/User";
 
+const ADMIN_EMAILS = ["rjha5516@gmail.com"];
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -49,21 +51,30 @@ export const authOptions: NextAuthOptions = {
         const existingUser = await User.findOne({ email: user.email });
 
         if (!existingUser) {
+          const isAdmin = ADMIN_EMAILS.includes(user.email!);
           await User.create({
             name: user.name,
             email: user.email,
             avatar: user.image,
             provider: "google",
+            role: isAdmin ? "admin" : "student",
           });
+        } else if (ADMIN_EMAILS.includes(user.email!) && existingUser.role !== "admin") {
+          existingUser.role = "admin";
+          await existingUser.save();
         }
       }
       return true;
     },
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user, trigger }) {
+      if (user || trigger === "update") {
         await connectDB();
-        const dbUser = await User.findOne({ email: user.email });
+        const dbUser = await User.findOne({ email: token.email || user?.email });
         if (dbUser) {
+          if (ADMIN_EMAILS.includes(dbUser.email) && dbUser.role !== "admin") {
+            dbUser.role = "admin";
+            await dbUser.save();
+          }
           token.id = dbUser._id.toString();
           token.role = dbUser.role;
           token.branch = dbUser.branch;

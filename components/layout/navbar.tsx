@@ -79,6 +79,11 @@ export default function Navbar() {
                 <span className="hidden text-sm font-semibold text-gray-700 dark:text-gray-300 md:block">
                   {session.user?.name?.split(" ")[0]}
                 </span>
+                {(session.user as any)?.role === "admin" && (
+                  <span className="hidden rounded-md bg-gradient-to-r from-red-500 to-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white md:inline-block">
+                    ADMIN
+                  </span>
+                )}
                 <ChevronDown className={cn(
                   "hidden h-4 w-4 text-gray-400 transition-transform duration-300 md:block",
                   dropdownOpen && "rotate-180"

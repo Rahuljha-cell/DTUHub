@@ -34,7 +34,16 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "12");
 
-    const filter: any = { status: "available" };
+    const mine = searchParams.get("mine");
+    const session = mine ? await getServerSession(authOptions) : null;
+
+    const filter: any = {};
+
+    if (mine && session?.user) {
+      filter.owner = (session.user as any).id;
+    } else {
+      filter.status = "available";
+    }
 
     if (category && category !== "all") filter.category = category;
     if (condition) filter.condition = condition;

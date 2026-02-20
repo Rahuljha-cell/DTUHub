@@ -110,6 +110,19 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ comments: post?.comments });
     }
 
+    if (action === "delete") {
+      const userRole = (session.user as any).role;
+      const post = await Post.findById(postId);
+      if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+      if (post.author.toString() !== userId && userRole !== "admin") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
+      await Post.findByIdAndDelete(postId);
+      return NextResponse.json({ deleted: true });
+    }
+
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ error: "Failed" }, { status: 500 });

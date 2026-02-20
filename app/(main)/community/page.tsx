@@ -84,9 +84,27 @@ function CommunityContent() {
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const res = await fetch("/api/community", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId, action: "delete" }),
+      });
+      if (res.ok) {
+        setPosts((prev) => prev.filter((p) => p._id !== postId));
+        toast.success("Post deleted");
+      }
+    } catch {
+      toast.error("Failed to delete post");
+    }
+  };
+
   const handleNewPost = (post: any) => {
     setPosts((prev) => [post, ...prev]);
   };
+
+  const isAdmin = (session?.user as any)?.role === "admin";
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
@@ -146,8 +164,10 @@ function CommunityContent() {
               key={post._id}
               post={post}
               userId={(session?.user as any)?.id}
+              isAdmin={isAdmin}
               onLike={handleLike}
               onComment={handleComment}
+              onDelete={handleDeletePost}
             />
           ))
         )}

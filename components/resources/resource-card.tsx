@@ -10,6 +10,7 @@ import {
   BookMarked,
   File,
 } from "lucide-react";
+import Link from "next/link";
 import Badge from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import Avatar from "@/components/ui/avatar";
@@ -76,12 +77,16 @@ export default function ResourceCard({
               <div className="flex items-center gap-2 text-xs text-gray-400">
                 {resource.uploader && (
                   <>
-                    <Avatar
-                      src={resource.uploader.avatar}
-                      name={resource.uploader.name}
-                      size="sm"
-                    />
-                    <span className="font-medium">{resource.uploader.name}</span>
+                    <Link href={`/profile/${resource.uploader._id}`} className="shrink-0">
+                      <Avatar
+                        src={resource.uploader.avatar}
+                        name={resource.uploader.name}
+                        size="sm"
+                      />
+                    </Link>
+                    <Link href={`/profile/${resource.uploader._id}`} className="font-medium hover:text-primary-600 transition-colors dark:hover:text-primary-400">
+                      {resource.uploader.name}
+                    </Link>
                     <span>•</span>
                   </>
                 )}

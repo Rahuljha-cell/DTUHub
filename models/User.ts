@@ -9,7 +9,7 @@ export interface IUser extends Document {
   branch?: string;
   year?: number;
   rollNumber?: string;
-  role: "student" | "senior" | "admin";
+  role: "student" | "senior" | "admin" | "banned";
   bio?: string;
   skills: string[];
   interests: string[];
@@ -34,7 +34,7 @@ const UserSchema = new Schema<IUser>(
     rollNumber: String,
     role: {
       type: String,
-      enum: ["student", "senior", "admin"],
+      enum: ["student", "senior", "admin", "banned"],
       default: "student",
     },
     bio: { type: String, maxlength: 500 },

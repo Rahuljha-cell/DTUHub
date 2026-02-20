@@ -128,6 +128,19 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ likes: resource.likes.length, liked: !hasLiked });
     }
 
+    if (action === "delete") {
+      const userRole = (session.user as any).role;
+      const resource = await Resource.findById(resourceId);
+      if (!resource) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+      if (resource.uploader.toString() !== userId && userRole !== "admin") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
+      await Resource.findByIdAndDelete(resourceId);
+      return NextResponse.json({ deleted: true });
+    }
+
     if (action === "download") {
       await Resource.findByIdAndUpdate(resourceId, {
         $inc: { downloads: 1 },

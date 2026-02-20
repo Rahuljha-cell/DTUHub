@@ -4,6 +4,10 @@ import { authOptions } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import Listing from "@/models/Listing";
 
+function isAdmin(session: any) {
+  return session?.user && (session.user as any).role === "admin";
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -50,7 +54,8 @@ export async function PATCH(
       );
     }
 
-    if (listing.owner.toString() !== (session.user as any).id) {
+    const userId = (session.user as any).id;
+    if (listing.owner.toString() !== userId && !isAdmin(session)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -88,7 +93,8 @@ export async function DELETE(
       );
     }
 
-    if (listing.owner.toString() !== (session.user as any).id) {
+    const delUserId = (session.user as any).id;
+    if (listing.owner.toString() !== delUserId && !isAdmin(session)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -70,11 +70,45 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).id !== params.id) {
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const isOwnProfile = (session.user as any).id === params.id;
+    const isAdmin = (session.user as any).role === "admin";
+
+    if (!isOwnProfile && !isAdmin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
+
+    if (isAdmin && body.adminAction) {
+      await connectDB();
+
+      if (body.adminAction === "ban") {
+        await User.findByIdAndUpdate(params.id, { role: "banned" });
+        return NextResponse.json({ message: "User banned" });
+      }
+
+      if (body.adminAction === "unban") {
+        await User.findByIdAndUpdate(params.id, { role: "student" });
+        return NextResponse.json({ message: "User unbanned" });
+      }
+
+      if (body.adminAction === "makeAdmin") {
+        await User.findByIdAndUpdate(params.id, { role: "admin" });
+        return NextResponse.json({ message: "User promoted to admin" });
+      }
+
+      if (body.adminAction === "delete") {
+        await User.findByIdAndDelete(params.id);
+        await Listing.deleteMany({ owner: params.id });
+        await Resource.deleteMany({ uploader: params.id });
+        return NextResponse.json({ message: "User and all their content deleted" });
+      }
+    }
+
     const allowedFields = ["name", "bio", "skills", "interests", "phone", "branch", "year", "avatar"];
     const update: any = {};
 
